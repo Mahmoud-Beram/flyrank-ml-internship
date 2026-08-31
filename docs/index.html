@@ -65,7 +65,7 @@ from the FlyRank warehouse (March 2026 GSC data), we trained a Random Forest Reg
 on seven clean content and position features to predict expected CTR, then ranked pages
 by estimated missed clicks (<code>lost_clicks = predicted − actual CTR × impressions</code>). The
 model more than doubles the hit rate of the existing hand-written rule in a rigorous
-5-fold GroupKFold evaluation (Precision@30: 47% vs 21%), but is explicitly limited to
+5-fold GroupKFold evaluation (Precision@50: 47% vs 21%), but is explicitly limited to
 existing clients with at least one prior month of history — and the key methodological
 finding (a simpler model's apparent superiority was an artifact of how the evaluation
 label was constructed) is reported as an open finding, not a reason to switch models.</p>
