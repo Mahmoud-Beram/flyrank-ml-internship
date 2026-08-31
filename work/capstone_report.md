@@ -5,6 +5,20 @@
 - Repo: github.com/Mahmoud-Beram/flyrank-ml-internship
 - Date: 2026-08-31
 
+## Abstract
+
+Content editorial teams at FlyRank manage tens of thousands of pages per client, but
+can only manually review a fraction each week — this project asks: *can we rank which
+pages are leaving the most clicks on the table?* Using 61,911 (client, content) pairs
+from the FlyRank warehouse (March 2026 GSC data), we trained a Random Forest Regressor
+on seven clean content and position features to predict expected CTR, then ranked pages
+by estimated missed clicks (`lost_clicks = predicted − actual CTR × impressions`). The
+model more than doubles the hit rate of the existing hand-written rule in a rigorous
+5-fold GroupKFold evaluation (Precision@30: 47% vs 21%), but is explicitly limited to
+existing clients with at least one prior month of history — and the key methodological
+finding (a simpler model's apparent superiority was an artifact of how the evaluation
+label was constructed) is reported as an open finding, not a reason to switch models.
+
 ## 1. Problem framing
 
 **Unit of analysis:** one (client, content) pair's aggregated GSC performance for a
@@ -110,7 +124,7 @@ R²≈0.08) but not to brand-new ones (grouped R²≈-0.04 to -0.20, unstable an
 negative) — a cold-start limitation, not overfitting or a bug (feature importance
 rankings stay nearly identical across splits, ruling out simple memorization).
 
-**Precision@30 (5-fold GroupKFold, the metric that matches the actual decision):**
+**Precision@50 (5-fold GroupKFold, the metric that matches the actual decision):**
 
 | | mean | std |
 |---|---:|---:|
@@ -124,7 +138,7 @@ Random Forest more than doubles the baseline rule's precision (0.473 vs 0.207, ~
 and clears the base rate by a similar margin.
 
 **A methodological caveat worth stating plainly:** Linear Regression scored *higher*
-on Precision@30 despite the *worst* R² (0.057). Its coefficients show why: `avg_pos`
+on Precision@50 despite the *worst* R² (0.057). Its coefficients show why: `avg_pos`
 dominates (magnitude ~2.3x the next feature; `word_count`/`search_volume`/`backlinks`
 contribute almost nothing) — and the "truly underperforming" ground truth used for
 Precision@K is itself defined relative to position buckets. Linear Regression's higher
@@ -189,3 +203,10 @@ of R² (DuckDB's `read_parquet` doesn't guarantee row order without an `ORDER BY
 which shifts which rows land in train vs test). The stable claims are the *directions*
 and *relative* comparisons (leak inflates scores; grouped collapses; RF beats the
 baseline rule by ~2x) — not any single number to the third decimal.
+
+## Acknowledgments & Data Credit
+
+Built on the **FlyRank ML Internship dataset** — anonymized, aggregated Google Search
+Console and content-property data provided by [FlyRank](https://flyrank.ai) for
+educational research. Crediting the data source is standard research practice; this
+project would not exist without that real warehouse.

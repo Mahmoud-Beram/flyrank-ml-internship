@@ -3,57 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capstone Report - FlyRank</title>
+    <title>Capstone Report — FlyRank Content Opportunity Scoring</title>
+    <meta name="description" content="Can we rank which pages are leaving the most clicks on the table? A Random Forest model that more than doubles the hit rate of a hand-written rule, with honest validation and clear limits.">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
+            line-height: 1.7;
+            color: #24292e;
+            max-width: 820px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 2.5rem 1.5rem;
         }
-        h1, h2, h3 {
-            color: #2c3e50;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.3em;
-        }
+        h1 { font-size: 1.9rem; color: #0f3460; border-bottom: 3px solid #0f3460; padding-bottom: 0.4em; }
+        h2 { font-size: 1.3rem; color: #2c3e50; border-bottom: 1px solid #e1e4e8; padding-bottom: 0.3em; margin-top: 2.5rem; }
+        h3 { color: #2c3e50; }
         table {
             border-collapse: collapse;
             width: 100%;
-            margin-bottom: 1rem;
+            margin: 1rem 0 1.5rem;
+            font-size: 0.92rem;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+        th, td { border: 1px solid #d0d7de; padding: 8px 12px; text-align: left; }
+        th { background-color: #f6f8fa; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f9fafb; }
         code {
-            background-color: #f8f9fa;
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
-            font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-            font-size: 85%;
-        }
-        pre code {
-            background-color: transparent;
-            padding: 0;
+            background-color: #f6f8fa;
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 87%;
         }
         pre {
             background-color: #f6f8fa;
             padding: 16px;
             overflow: auto;
             border-radius: 6px;
+            border: 1px solid #e1e4e8;
         }
-        blockquote {
-            border-left: 4px solid #dfe2e5;
-            padding: 0 15px;
-            color: #6a737d;
-            margin: 0;
-        }
+        pre code { background: transparent; padding: 0; font-size: 85%; }
+        img { max-width: 100%; border-radius: 6px; margin: 1rem 0 0.3rem; }
+        em { color: #555; font-size: 0.9rem; }
+        blockquote { border-left: 4px solid #0f3460; padding: 0 15px; color: #555; margin: 1rem 0; }
+        a { color: #0f3460; }
+        ul, ol { padding-left: 1.5rem; }
+        li { margin-bottom: 0.3rem; }
     </style>
 </head>
 <body>
@@ -64,6 +57,18 @@
 <li>Repo: github.com/Mahmoud-Beram/flyrank-ml-internship</li>
 <li>Date: 2026-08-31</li>
 </ul>
+<h2>Abstract</h2>
+<p>Content editorial teams at FlyRank manage tens of thousands of pages per client, but
+can only manually review a fraction each week — this project asks: <em>can we rank which
+pages are leaving the most clicks on the table?</em> Using 61,911 (client, content) pairs
+from the FlyRank warehouse (March 2026 GSC data), we trained a Random Forest Regressor
+on seven clean content and position features to predict expected CTR, then ranked pages
+by estimated missed clicks (<code>lost_clicks = predicted − actual CTR × impressions</code>). The
+model more than doubles the hit rate of the existing hand-written rule in a rigorous
+5-fold GroupKFold evaluation (Precision@30: 47% vs 21%), but is explicitly limited to
+existing clients with at least one prior month of history — and the key methodological
+finding (a simpler model's apparent superiority was an artifact of how the evaluation
+label was constructed) is reported as an open finding, not a reason to switch models.</p>
 <h2>1. Problem framing</h2>
 <p><strong>Unit of analysis:</strong> one (client, content) pair's aggregated GSC performance for a
 given month.</p>
@@ -168,7 +173,7 @@ the March label window — a temporal leak. Removing it dropped random-split R²
 R²≈0.08) but not to brand-new ones (grouped R²≈-0.04 to -0.20, unstable and often
 negative) — a cold-start limitation, not overfitting or a bug (feature importance
 rankings stay nearly identical across splits, ruling out simple memorization).</p>
-<p><strong>Precision@30 (5-fold GroupKFold, the metric that matches the actual decision):</strong></p>
+<p><strong>Precision@50 (5-fold GroupKFold, the metric that matches the actual decision):</strong></p>
 <table>
 <thead>
 <tr>
@@ -205,10 +210,12 @@ rankings stay nearly identical across splits, ruling out simple memorization).</
 </tr>
 </tbody>
 </table>
+<p><img alt="Precision@50 comparison across models" src="precision_chart.png" />
+<em>Figure 1: Precision@50 (mean ± std, 5-fold GroupKFold). Random Forest more than doubles the Week-4 rule.</em></p>
 <p>Random Forest more than doubles the baseline rule's precision (0.473 vs 0.207, ~2.3x)
 and clears the base rate by a similar margin.</p>
 <p><strong>A methodological caveat worth stating plainly:</strong> Linear Regression scored <em>higher</em>
-on Precision@30 despite the <em>worst</em> R² (0.057). Its coefficients show why: <code>avg_pos</code>
+on Precision@50 despite the <em>worst</em> R² (0.057). Its coefficients show why: <code>avg_pos</code>
 dominates (magnitude ~2.3x the next feature; <code>word_count</code>/<code>search_volume</code>/<code>backlinks</code>
 contribute almost nothing) — and the "truly underperforming" ground truth used for
 Precision@K is itself defined relative to position buckets. Linear Regression's higher
@@ -260,5 +267,10 @@ of R² (DuckDB's <code>read_parquet</code> doesn't guarantee row order without a
 which shifts which rows land in train vs test). The stable claims are the <em>directions</em>
 and <em>relative</em> comparisons (leak inflates scores; grouped collapses; RF beats the
 baseline rule by ~2x) — not any single number to the third decimal.</p>
+<h2>Acknowledgments &amp; Data Credit</h2>
+<p>Built on the <strong>FlyRank ML Internship dataset</strong> — anonymized, aggregated Google Search
+Console and content-property data provided by <a href="https://flyrank.ai">FlyRank</a> for
+educational research. Crediting the data source is standard research practice; this
+project would not exist without that real warehouse.</p>
 </body>
 </html>
